@@ -1,8 +1,7 @@
 /* Upload — info aside + stacked Original / Reference slots */
 .u-page { display: flex; height: 100vh; min-height: 100vh; }
-.u-page .rail { border-left: 0; }
 .u-aside { flex: 0 1 360px; min-width: 300px; padding: 32px 36px 32px 44px; display: flex; flex-direction: column; border-right: 1px solid var(--line); overflow-y: auto; }
-.u-aside .display { font-size: clamp(52px, 5.4vw, 80px); }
+.u-aside .display { font-size: clamp(38px, 4vw, 54px); } /* 왼쪽 패널이 360px뿐이라 랜딩 크기로는 "(Upload.)"가 들어가지 않는다 */
 .u-intro { margin-top: clamp(24px, 7vh, 96px); }
 
 .checklist { display: flex; flex-direction: column; margin-top: 40px; border-top: 1px solid var(--line); }
@@ -72,5 +71,4 @@
   .u-aside { flex: 1 1 100%; border-right: 0; }
   .u-main { flex: 1 1 100%; border-right: 0; }
   .u-section { min-height: 380px; }
-  .rail { display: none; }
 }

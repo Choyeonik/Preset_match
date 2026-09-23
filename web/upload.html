@@ -13,8 +13,8 @@
   <aside class="u-aside">
     <a class="logo" href="index.html"><span class="logo-mark"></span><span class="logo-word">Retone</span></a>
     <div class="u-intro">
-      <h1 class="display">Upload.</h1>
-      <div class="lead"><p>바꾸고 싶은 내 사진과, 닮고 싶은 색감의 사진을 한 장씩 올려주세요. 순서는 상관없어요.</p></div>
+      <h1 class="display"><span>(</span>Upload.<span>)</span></h1>
+      <div class="lead"><p>Taking photo<br>what you often see</p></div>
     </div>
     <div class="checklist">
       <div class="check" id="check-original" data-status="empty"><i class="check-dot"></i><div><b>Original</b><span>아직 올리지 않았어요</span></div></div>
@@ -46,26 +46,9 @@
     <input type="file" id="file-reference" class="visually-hidden" accept=".jpg,.jpeg,.png,.heic,.heif,.raw,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf,image/*">
   </main>
 
-  <nav class="rail">
-    <button class="icon-btn burger" data-menu-open aria-label="메뉴 열기"><span></span><span></span><span></span></button>
-  </nav>
 </div>
 
-<div class="scrim" data-menu-close></div>
-<div class="drawer" role="dialog" aria-label="메뉴">
-  <div class="drawer-head"><button class="icon-btn close-x" data-menu-close aria-label="메뉴 닫기"></button></div>
-  <nav class="drawer-nav">
-    <a href="index.html">홈</a>
-    <a href="upload.html" aria-current="page">시작하기</a>
-    <a href="#">내 Preset</a>
-  </nav>
-  <div class="drawer-foot">
-    <a class="btn btn-primary btn-lg" href="#">로그인</a>
-    <small>로그인하면 만든 Preset을 저장할 수 있어요</small>
-  </div>
-</div>
-
-<script src="js/drawer.js"></script>
+<script src="js/core.js"></script>
 <script src="js/upload.js"></script>
 </body>
 </html>

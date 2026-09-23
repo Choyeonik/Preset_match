@@ -18,13 +18,12 @@ npx serve .        # 또는 python3 -m http.server
 index.html        F1 랜딩 — 고정 정보 패널 + 무한 스크롤 Before/After 체크무늬 그리드
 upload.html       F2 업로드 — Original / Reference 슬롯 (위아래)
 analyzing.html    F3 분석 로딩 — 3단계 진행, 스캔 → 색 추출 → 미리보기 리빌
-editor.html       F4–F7, F9 편집 — WebGL 미리보기, 파라미터 패널, 강도, 비교, 되돌리기, 저장, Preset
+editor.html       F4–F7 편집 — WebGL 미리보기, 파라미터 패널, 강도, 비교, 되돌리기, 회전, 저장(JPG/PNG/XMP)
 css/
-  base.css        디자인 토큰(:root 변수), 리셋, 공통 컴포넌트(버튼·드로어·세그먼트·토스트·모달·태그)
+  base.css        디자인 토큰(:root 변수), 리셋, 공통 컴포넌트(버튼·세그먼트·토스트·태그)
   landing.css / upload.css / analyzing.css / editor.css   화면별 스타일
 js/
   core.js         RetoneCore — 자동 보정 기본값(AUTO), WebGL 렌더러, 톤 커브 보간, XMP 생성
-  drawer.js       오른쪽 메뉴 드로어 (data-menu-open / data-menu-close)
   landing.js / upload.js / analyzing.js / editor.js      화면별 동작
 ```
 
@@ -61,14 +60,15 @@ js/
 - **섹션 아코디언** `.sec` — 빛·색(기본 열림), 컬러 믹서·컬러 그레이딩·톤 커브(기본 닫힘), 수정 개수 배지
 - **톤 커브** SVG, 0–1 정규화 포인트 배열. 클릭 추가, 드래그 이동, 더블클릭 삭제, 끝점 x 고정, 최대 10점
 - **업로드 슬롯** `.slot[data-status=empty|uploading|done|error]`
-- **세그먼트** `.seg`, **토스트** `.toast[data-kind=ok|error|info]`, **팝오버** `.popover`, **모달** `.modal`, **드로어** `.drawer`, **라이트박스** `.lightbox`(밀어서 비교)
+- **세그먼트** `.seg`, **토스트** `.toast[data-kind=ok|error|info]`, **팝오버** `.popover`, **라이트박스** `.lightbox`(밀어서 비교)
 
 ## 백엔드 연결 지점 (현재 시뮬레이션)
 
 - `upload.js › runUpload()` — 업로드 진행률 (XHR upload progress로 교체)
-- `analyzing.js › run()` — 분석 진행/단계 (SSE 또는 폴링으로 교체), 결과 파라미터를 `RetoneCore.AUTO` 대신 서버 응답으로
+- `analyzing.js › run()` — 분석 진행/단계 (SSE 또는 폴링으로 교체). 색감 분석 자체(`core.js › analyze()`)는 브라우저에서 실제로 계산하며 서버가 필요 없다
 - `editor.js › markDirty()` — 초안 자동 저장
-- `editor.js › savePresetBtn` — `POST /presets`, 로그인은 `[data-login]` 버튼
+
+로그인·프리셋 저장·메뉴 드로어는 없다 — 편집 화면에서 곧바로 사진(JPG/PNG)과 XMP를 받는다.
 
 ## 참고
 

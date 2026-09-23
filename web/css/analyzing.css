@@ -1,6 +1,5 @@
 /* Analyzing — progress aside + photo stage with scan / reveal + palette strip */
 .a-page { display: flex; height: 100vh; min-height: 100vh; }
-.a-page .rail { border-left: 0; }
 .a-aside { flex: 0 1 360px; min-width: 300px; padding: 32px 36px 32px 44px; display: flex; flex-direction: column; border-right: 1px solid var(--line); overflow-y: auto; }
 .a-top { margin-top: clamp(24px, 7vh, 96px); }
 .pct { font-size: clamp(64px, 7vw, 104px); font-weight: 800; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -62,5 +61,4 @@
   .a-page { flex-wrap: wrap; height: auto; }
   .a-aside, .a-main { flex: 1 1 100%; border-right: 0; }
   .a-main { min-height: 70vh; }
-  .rail { display: none; }
 }

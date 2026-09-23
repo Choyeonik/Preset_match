@@ -113,15 +113,6 @@ button.save-row:hover { background: var(--bg); }
 .curve-meta span { font-variant-numeric: tabular-nums; font-weight: 600; }
 .curve-help { font-size: var(--fs-2xs); color: var(--faint); margin-top: 6px; line-height: 1.5; }
 
-/* modals */
-.field-label { display: block; font-size: var(--fs-xs); font-weight: 600; margin-top: 20px; }
-.field { width: 100%; height: 48px; margin-top: 6px; padding: 0 14px; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); font-size: 15px; outline: none; background: #fff; }
-.field:focus { border-color: var(--ink); }
-.field.is-error { border-color: var(--danger); }
-.alert { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--danger-bg); font-size: var(--fs-sm); line-height: 1.5; color: var(--danger-ink); }
-.alert .err-icon { width: 18px; height: 18px; font-size: 11px; }
-.login-note { font-size: var(--fs-xs); color: var(--muted); text-align: center; margin-top: 16px; }
-
 /* lightbox */
 .lightbox { position: fixed; inset: 0; z-index: 60; background: rgba(12,14,17,.9); display: flex; align-items: center; justify-content: center; }
 .lightbox-bg { position: absolute; inset: 0; }
