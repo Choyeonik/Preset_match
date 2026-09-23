@@ -1,4 +1,5 @@
 /* Landing — fixed info panel + infinite checkerboard Before/After grid */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap");
 .landing { display: flex; min-height: 100vh; }
 
 .l-aside { flex: 1 1 380px; min-width: 0; position: sticky; top: 0; height: 100vh; min-height: 560px; overflow: hidden; padding: 40px 40px 40px 48px; display: flex; flex-direction: column; }
@@ -15,11 +16,11 @@
 .dial-plate { position: absolute; left: 70px; top: 70px; width: 280px; height: 280px; border-radius: 50%; background: var(--slot); box-shadow: 0 20px 50px rgba(30, 40, 55, .08); }
 .dial-ring { position: absolute; left: 115px; top: 115px; width: 190px; height: 190px; border-radius: 50%; border: 14px solid var(--photo-bg); overflow: hidden; background: var(--photo-bg); }
 .dial-photo { width: 100%; height: 100%; background-size: cover; background-position: center; }
-.moods { position: absolute; left: 140px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; pointer-events: none; z-index: 1; }
-.moods span { font-size: var(--fs-sm); font-weight: 500; color: #DCE0E4; transition: all .3s; }
 
 .l-copy { position: relative; z-index: 2; margin-top: 10vh; margin-left: var(--copy-indent, 230px); max-width: 320px; }
-.l-copy .cta { margin-top: 36px; margin-left: 44px; }
+.l-copy .lead p { font-size: 45px; }
+/* .btn은 inline-flex라 margin auto가 먹지 않는다 — flex로 바꾸고 폭을 내용에 맞춰야 가운데로 온다 */
+.l-copy .cta { display: flex; width: fit-content; margin: 36px auto 0; font-family: "Playfair Display", serif; }
 .l-foot { margin-top: auto; margin-left: var(--copy-indent, 230px); display: flex; gap: 20px; font-size: var(--fs-xs); color: var(--muted); position: relative; z-index: 2; }
 
 .scroll-cue { position: absolute; right: 40px; bottom: 36px; width: 24px; height: 38px; border: 2px solid var(--ink); border-radius: 12px; display: flex; justify-content: center; padding-top: 7px; transition: opacity .3s; }
@@ -36,12 +37,8 @@
 .col { flex: 1 1 0; min-width: 0; }
 .col-b { border-left: 1px solid var(--line); padding-top: 41.6667%; } /* one cell (6:5) of offset → checkerboard */
 .cell { aspect-ratio: 6 / 5; position: relative; }
-.cell-label { position: absolute; left: 18px; bottom: 14px; }
-.cell-label b { display: block; font-size: var(--fs-xs); font-weight: 700; }
-.cell-label span { display: block; font-size: var(--fs-2xs); color: var(--muted); margin-top: 3px; }
 .cell-photo { overflow: hidden; background: #DDE1E6; }
 .cell-photo .img { width: 100%; height: 100%; background-size: cover; background-position: center; }
-.cell-photo .tag { left: 12px; top: 12px; }
 
 @media (max-width: 859px) {
   .landing { flex-wrap: wrap; }
