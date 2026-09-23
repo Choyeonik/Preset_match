@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>편집 — Retone</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+<!-- 상태 미리보기: editor.html?loggedIn=1  /  Preset 저장 실패: ?saveFails=1 -->
+<div class="e-page">
+  <header class="e-top">
+    <a href="index.html" aria-label="홈"><span class="logo-mark"></span></a>
+    <div class="vr"></div>
+    <div class="e-file">
+      <div class="e-thumb" id="origThumb"></div>
+      <div style="min-width:0">
+        <div class="e-file-name" id="origName">IMG_2041.JPG</div>
+        <div class="e-file-ref"><i id="refThumb"></i><span>Reference · <span id="refName">reference_film.jpg</span></span></div>
+      </div>
+      <div class="save-chip" id="saveChip" data-s="saved">저장됨</div>
+    </div>
+    <div class="e-actions">
+      <button class="btn btn-outline" id="presetBtn">Preset 저장</button>
+      <div style="position:relative">
+        <button class="btn btn-primary" id="saveBtn" style="padding:0 22px">저장</button>
+        <div id="saveMenu" hidden>
+          <div class="pop-scrim" data-close-pop></div>
+          <div class="popover save-menu">
+            <h3>무엇을 저장할까요?</h3>
+            <div class="save-row">
+              <div><b>사진</b><span>지금 보이는 보정 결과 그대로</span></div>
+              <button class="fmt-btn" data-dl="image/jpeg">JPG</button>
+              <button class="fmt-btn" data-dl="image/png">PNG</button>
+            </div>
+            <div class="hr"></div>
+            <button class="save-row" id="xmpBtn">
+              <div><b>XMP Preset</b><span>Lightroom에서 같은 보정값을 쓸 수 있어요</span></div>
+              <em>.xmp</em>
+            </button>
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn burger" data-menu-open aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <div class="e-body">
+    <div class="e-work">
+      <div class="stage" id="stage">
+        <div class="photo" id="photo">
+          <canvas id="canvas"></canvas>
+          <div class="photo-hit" id="photoHit"></div>
+          <div id="splitUi" hidden>
+            <div class="split-line" id="splitLine"><div class="split-knob">‹›</div></div>
+            <span class="tag tag-before">Before</span>
+            <span class="tag tag-dark tag-after">After</span>
+          </div>
+          <button class="expand" id="expandBtn" aria-label="크게 보기" title="크게 보기"></button>
+          <span class="tag tag-md photo-chip" id="chip">자동 보정 결과</span>
+        </div>
+        <span class="hold-hint" id="holdHint">사진을 누르고 있으면 원본이 보여요</span>
+        <div class="toast" id="toast" hidden><span class="toast-dot" id="toastDot">✓</span><span id="toastText"></span><button id="toastAction" hidden></button></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="seg" id="viewSeg">
+          <button data-view="after" aria-pressed="true">보정 결과</button>
+          <button data-view="split" aria-pressed="false">Before / After</button>
+        </div>
+        <div class="strength">
+          <b>자동 보정 강도</b>
+          <div class="strength-track" id="strength" tabindex="0" role="slider" aria-label="자동 보정 강도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+            <div class="rail-bg"></div><div class="fill"></div><div class="knob"></div>
+          </div>
+          <output id="strengthVal">100%</output>
+        </div>
+        <div class="tool-right">
+          <button class="btn btn-quiet" id="resetBtn" disabled>↺ 되돌리기</button>
+          <div id="resetPop" hidden>
+            <div class="pop-scrim" data-close-pop></div>
+            <div class="popover reset-pop">
+              <b>자동 보정 결과로 되돌릴까요?</b>
+              <p>직접 조정한 값 <span id="modCount">0</span>개와 강도가 분석 직후 상태로 돌아가요.</p>
+              <div class="row">
+                <button class="btn btn-quiet" data-close-pop>취소</button>
+                <button class="btn btn-primary btn-sm" id="doReset">되돌리기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel" id="panel">
+      <div class="panel-head">
+        <b>세부 조정</b>
+        <p>트랙의 회색 눈금이 자동 보정값이에요. 슬라이더를 더블클릭하면 그 값으로 돌아가요.</p>
+      </div>
+      <div id="sections"></div>
+    </aside>
+  </div>
+</div>
+
+<!-- lightbox -->
+<div class="lightbox" id="lightbox" hidden>
+  <div class="lightbox-bg" data-close-lb></div>
+  <div class="lb-frame" id="lbFrame">
+    <div class="lb-img" id="lbAfter" role="img" aria-label="보정 후 크게 보기"></div>
+    <div class="lb-img" id="lbBefore"></div>
+    <div class="lb-hit" id="lbHit"></div>
+    <div class="split-line" id="lbLine"><div class="split-knob">‹›</div></div>
+    <span class="tag tag-md tag-before">보정 전</span>
+    <span class="tag tag-md tag-dark tag-after">보정 후</span>
+  </div>
+  <div class="lb-title"><b id="lbName"></b><span id="lbSub">보정 전 / 보정 후</span></div>
+  <button class="icon-btn close-x lb-close" data-close-lb aria-label="닫기"></button>
+</div>
+
+<!-- login modal -->
+<div class="modal-wrap" id="loginModal" hidden>
+  <div class="modal">
+    <button class="icon-btn close-x" data-close-modal aria-label="닫기"></button>
+    <h2>로그인하고 Preset을 저장하세요</h2>
+    <p>지금 만든 색감을 내 Preset에 저장해 두면 다른 사진에도 바로 쓸 수 있어요.</p>
+    <div class="stack-8" style="margin-top:22px">
+      <button class="btn btn-outline btn-lg" data-login>Google로 계속하기</button>
+      <button class="btn btn-outline btn-lg" data-login>카카오로 계속하기</button>
+      <button class="btn btn-primary btn-lg" data-login>이메일로 계속하기</button>
+    </div>
+    <div class="login-note">편집과 다운로드는 로그인 없이 계속할 수 있어요</div>
+    <button class="btn-link" data-close-modal style="display:block;margin:6px auto 0;font-size:13px;font-weight:600">나중에 할게요</button>
+  </div>
+</div>
+
+<!-- save preset modal -->
+<div class="modal-wrap" id="saveModal" hidden>
+  <div class="modal">
+    <button class="icon-btn close-x" data-close-modal aria-label="닫기"></button>
+    <h2>Preset 저장</h2>
+    <p>현재 파라미터와 강도 <span id="saveStrength">100</span>%가 내 Preset에 저장돼요.</p>
+    <label class="field-label" for="presetName">이름</label>
+    <input class="field" id="presetName" maxlength="30">
+    <div class="alert" id="saveError" hidden><span class="err-icon">!</span><span>저장하지 못했어요. 네트워크 상태를 확인하고 다시 시도해 주세요. 편집 내용은 그대로 남아 있어요.</span></div>
+    <div class="modal-actions">
+      <button class="btn btn-quiet" data-close-modal style="height:46px;padding:0 20px;font-size:14px">취소</button>
+      <button class="btn btn-primary" id="savePresetBtn" style="height:46px;padding:0 22px">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" data-menu-close></div>
+<div class="drawer" role="dialog" aria-label="메뉴">
+  <div class="drawer-head"><button class="icon-btn close-x" data-menu-close aria-label="메뉴 닫기"></button></div>
+  <nav class="drawer-nav">
+    <a href="index.html">홈</a>
+    <a href="upload.html">새 사진</a>
+    <a href="#">내 Preset</a>
+  </nav>
+  <div class="drawer-foot">
+    <button class="btn btn-primary btn-lg" id="menuLogin">로그인</button>
+    <small>로그인하면 만든 Preset을 저장할 수 있어요</small>
+  </div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/drawer.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>

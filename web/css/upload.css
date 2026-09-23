@@ -1,0 +1,76 @@
+/* Upload — info aside + stacked Original / Reference slots */
+.u-page { display: flex; height: 100vh; min-height: 100vh; }
+.u-page .rail { border-left: 0; }
+.u-aside { flex: 0 1 360px; min-width: 300px; padding: 32px 36px 32px 44px; display: flex; flex-direction: column; border-right: 1px solid var(--line); overflow-y: auto; }
+.u-aside .display { font-size: clamp(52px, 5.4vw, 80px); }
+.u-intro { margin-top: clamp(24px, 7vh, 96px); }
+
+.checklist { display: flex; flex-direction: column; margin-top: 40px; border-top: 1px solid var(--line); }
+.check { display: flex; align-items: center; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.check-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #B9BFC7; }
+.check[data-status="uploading"] .check-dot { border-color: var(--ink); }
+.check[data-status="done"] .check-dot { border-color: var(--ink); background: var(--ink); }
+.check[data-status="error"] .check-dot { border-color: var(--danger); background: var(--danger); }
+.check b { display: block; font-size: 14px; font-weight: 700; }
+.check span { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.check[data-status="error"] span { color: var(--danger); }
+.check > div { min-width: 0; flex: 1; }
+
+.start { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; align-items: flex-start; }
+.start small { font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; min-height: 18px; }
+.u-foot { margin-top: auto; padding-top: 32px; display: flex; gap: 20px; font-size: var(--fs-xs); color: var(--muted); }
+
+.u-main { flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); overflow: hidden; }
+.u-section { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.u-section-head { height: 64px; flex: none; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 24px 12px; }
+.u-section-head b { display: block; font-size: var(--fs-sm); font-weight: 700; }
+.u-section-head span { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 3px; }
+.u-state { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
+.u-state[data-status="done"] { color: var(--ink); }
+.u-state[data-status="error"] { color: var(--danger); }
+
+/* slot */
+.slot { flex: 1; min-height: 0; margin: 0 24px 16px; border-radius: var(--r-lg); position: relative; overflow: hidden; background: var(--slot); border: 1.5px dashed #B9BFC7; transition: background .2s, border-color .2s; }
+.slot[data-status="uploading"], .slot[data-status="done"] { border: 1.5px solid transparent; }
+.slot.is-drag { border: 2px solid var(--ink); background: #DDE2E7; }
+.slot[data-status="error"] { border: 1.5px solid var(--danger); background: var(--danger-bg); }
+.slot-fill { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+
+.plus { width: 64px; height: 64px; border-radius: 50%; background: var(--ink); position: relative; transition: transform .2s; }
+.plus::before, .plus::after { content: ""; position: absolute; left: 50%; top: 50%; background: #fff; }
+.plus::before { width: 18px; height: 2px; margin: -1px 0 0 -9px; }
+.plus::after { width: 2px; height: 18px; margin: -9px 0 0 -1px; }
+.slot.is-drag .plus { transform: scale(1.12); }
+
+.slot-blur { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .35; filter: blur(2px); }
+.progress { width: min(280px, 100%); height: 6px; border-radius: 3px; background: var(--disabled); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 3px; transition: width .1s linear; }
+.progress-row { display: flex; justify-content: space-between; width: min(280px, 100%); font-size: var(--fs-xs); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.slot-name { font-size: 14px; font-weight: 700; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.slot-photo { position: absolute; inset: 12px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+.slot-nopreview { position: absolute; inset: 12px; border-radius: var(--r-sm); background: var(--photo-bg); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.slot-nopreview b { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; }
+.slot-nopreview span { font-size: var(--fs-xs); color: #B4BAC1; }
+.slot .tag-done { left: 16px; top: 16px; }
+.slot-note { position: absolute; right: 16px; top: 16px; max-width: 60%; font-size: var(--fs-2xs); line-height: 1.4; padding: 6px 10px; border-radius: var(--r-xs); background: rgba(255, 255, 255, .92); }
+.file-bar { position: absolute; left: 16px; right: 16px; bottom: 16px; background: #fff; border-radius: 14px; padding: 12px 12px 12px 16px; display: flex; align-items: center; gap: 12px; box-shadow: var(--sh-card); }
+.file-bar > div { min-width: 0; flex: 1; }
+.file-bar b { display: block; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-bar span { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 2px; }
+.file-bar .btn { background: #fff; }
+
+.slot-error { gap: 8px; padding: 16px 24px; }
+.slot-error-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+.slot-error-title .err-icon { width: 22px; height: 22px; font-size: 13px; }
+.slot-error p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink-2); max-width: 360px; text-wrap: pretty; }
+.slot-error small { font-size: var(--fs-xs); color: var(--muted); max-width: 100%; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-error .row { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; justify-content: center; align-items: center; }
+
+@media (max-width: 899px) {
+  .u-page { flex-wrap: wrap; height: auto; }
+  .u-aside { flex: 1 1 100%; border-right: 0; }
+  .u-main { flex: 1 1 100%; border-right: 0; }
+  .u-section { min-height: 380px; }
+  .rail { display: none; }
+}

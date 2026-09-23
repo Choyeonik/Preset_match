@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>분석 중 — Retone</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/analyzing.css">
+</head>
+<body>
+<!-- 상태 미리보기: analyzing.html?demo=step1|step2|step3|failed|done  /  실패 시뮬레이션: ?fail=1 -->
+<div class="a-page">
+  <aside class="a-aside">
+    <a class="logo" href="index.html"><span class="logo-mark"></span><span class="logo-word">Retone</span></a>
+
+    <div id="running">
+      <div class="a-top">
+        <div class="pct"><span id="pct">0</span><small>%</small></div>
+        <div class="a-step"><div><b id="stepTitle">이미지 분석 중</b><p id="stepDesc">두 사진의 밝기와 색 분포를 읽고 있어요</p></div></div>
+      </div>
+      <div class="steps" id="steps">
+        <div class="step" data-s="active"><span class="step-dot"></span><span class="step-label">이미지 분석</span><span class="step-state">진행 중</span></div>
+        <div class="step" data-s="wait"><span class="step-dot"></span><span class="step-label">색감 비교</span><span class="step-state">대기</span></div>
+        <div class="step" data-s="wait"><span class="step-dot"></span><span class="step-label">Preset 생성</span><span class="step-state">대기</span></div>
+      </div>
+      <div class="a-meta"><b id="remain">약 7초 남음</b><a href="upload.html">취소</a></div>
+    </div>
+
+    <div class="a-fail a-top" id="failed" hidden>
+      <span class="err-icon">!</span>
+      <h1>분석하지<br>못했어요</h1>
+      <p>일시적인 문제로 두 사진의 색감을 비교하지 못했어요. 올린 사진은 그대로 남아 있으니 다시 시도해 주세요.</p>
+      <small id="failStep">오류 코드 ANL-502</small>
+      <div class="row">
+        <button class="btn btn-primary btn-lg" id="retry">다시 시도</button>
+        <a class="btn btn-outline btn-lg" href="upload.html">사진 바꾸기</a>
+      </div>
+    </div>
+
+    <div class="a-top" id="done" hidden>
+      <div class="pct">Done.</div>
+      <div class="a-step"><div><b>Preset이 준비됐어요</b><p>편집 화면으로 이동하고 있어요</p></div></div>
+    </div>
+
+    <div class="a-foot">보통 10초 안에 끝나요.<br>이 창을 닫지 말아 주세요.</div>
+  </aside>
+
+  <main class="a-main">
+    <div class="a-stage" id="stage">
+      <div class="a-photo" id="photo">
+        <div class="orig" id="orig"></div>
+        <canvas id="canvas"></canvas>
+        <div class="scan-glow" id="scanGlow"></div>
+        <div class="scan-line" id="scanLine"></div>
+        <div class="reveal-line" id="revealLine" hidden></div>
+        <span class="tag tag-md" id="chip">Original</span>
+      </div>
+    </div>
+    <div class="palettes">
+      <div class="palette"><div class="palette-thumb" id="thumbO"></div><div><div class="palette-head"><b>Original</b><span id="statusO">색을 읽는 중</span></div><div class="swatches" id="swO"></div></div></div>
+      <div class="palette"><div class="palette-thumb" id="thumbR"></div><div><div class="palette-head"><b>Reference</b><span id="statusR">대기 중</span></div><div class="swatches" id="swR"></div></div></div>
+    </div>
+  </main>
+
+  <nav class="rail">
+    <button class="icon-btn burger" data-menu-open aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+  </nav>
+</div>
+
+<div class="scrim" data-menu-close></div>
+<div class="drawer" role="dialog" aria-label="메뉴">
+  <div class="drawer-head"><button class="icon-btn close-x" data-menu-close aria-label="메뉴 닫기"></button></div>
+  <nav class="drawer-nav">
+    <a href="index.html">홈</a>
+    <a href="upload.html">새 사진</a>
+    <a href="#">내 Preset</a>
+  </nav>
+  <div class="drawer-foot">
+    <a class="btn btn-primary btn-lg" href="#">로그인</a>
+    <small>로그인하면 만든 Preset을 저장할 수 있어요</small>
+  </div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/drawer.js"></script>
+<script src="js/analyzing.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retone — 사진 색감을 레퍼런스처럼</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+<div class="landing">
+  <aside class="l-aside" id="aside">
+    <div class="l-head">
+      <a class="logo" href="index.html"><span class="logo-mark"></span><span class="logo-word">Retone</span></a>
+      <div class="counter" aria-label="현재 사진">
+        <b id="counterNo">01</b>
+        <div class="counter-bar"><i id="counterBar"></i></div>
+        <span id="counterTotal">08</span>
+      </div>
+    </div>
+
+    <div class="dial" id="dial" aria-hidden="true">
+      <div class="dial-arc" id="dialArc"></div>
+      <div class="dial-plate"></div>
+      <div class="dial-ring"><div class="dial-photo" id="dialPhoto"></div></div>
+    </div>
+    <div class="moods" id="moods" aria-hidden="true"></div>
+
+    <div class="l-copy" id="copy">
+      <h1 class="display">Tone.</h1>
+      <div class="lead">
+        <p><span style="display:block">마음에 드는 사진 한 장이면 충분해요.</span><span style="display:block">그 색감을 내 사진에 그대로 옮겨 드려요.</span></p>
+      </div>
+      <a class="btn btn-primary btn-lg cta" href="upload.html">업로드 시작하기<span class="arrow">→</span></a>
+    </div>
+
+    <div class="scroll-cue" id="cue" aria-hidden="true"></div>
+
+    <div class="l-foot" id="foot"><span>JPG · PNG · HEIC · RAW</span><span>최대 50MB</span></div>
+  </aside>
+
+  <main class="l-grid" id="grid">
+    <div class="col col-a" id="colA"></div>
+    <div class="col col-b" id="colB"></div>
+  </main>
+
+  <nav class="rail">
+    <button class="icon-btn burger" data-menu-open aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+  </nav>
+</div>
+
+<div class="scrim" data-menu-close></div>
+<div class="drawer" role="dialog" aria-label="메뉴">
+  <div class="drawer-head"><button class="icon-btn close-x" data-menu-close aria-label="메뉴 닫기"></button></div>
+  <nav class="drawer-nav">
+    <a href="index.html" aria-current="page">홈</a>
+    <a href="upload.html">시작하기</a>
+    <a href="#">내 Preset</a>
+  </nav>
+  <div class="drawer-foot">
+    <a class="btn btn-primary btn-lg" href="#">로그인</a>
+    <small>로그인하면 만든 Preset을 저장할 수 있어요</small>
+  </div>
+</div>
+
+<script src="js/drawer.js"></script>
+<script src="js/landing.js"></script>
+</body>
+</html>
