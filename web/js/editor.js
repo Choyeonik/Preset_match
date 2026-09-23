@@ -1,9 +1,9 @@
 // Editor: WebGL preview, parameter panel, strength, compare, reset, save (photo/XMP), preset, lightbox.
 (function () {
-  const C = window.RetoneCore, A = C.AUTO;
+  const C = window.RetoneCore;
+  const A = (() => { try { return JSON.parse(sessionStorage.getItem('retone.auto')) || C.AUTO; } catch (e) { return C.AUTO; } })();
   const $ = id => document.getElementById(id);
   const q = new URLSearchParams(location.search);
-  const SAVE_FAILS = q.get('saveFails') === '1';
 
   const LIGHT = [['exposure', '노출', 'Exposure', -5, 5, 0.05], ['contrast', '대비', 'Contrast', -100, 100, 1], ['highlights', '밝은 영역', 'Highlights', -100, 100, 1], ['shadows', '어두운 영역', 'Shadows', -100, 100, 1], ['whites', '흰색 계열', 'Whites', -100, 100, 1], ['blacks', '검은색 계열', 'Blacks', -100, 100, 1]];
   const COLOR = [['temperature', '색온도', 'Temperature', -100, 100, 1, 'linear-gradient(90deg,#4A7FD6,#D9DDE2,#E8B93A)'], ['tint', '색조', 'Tint', -100, 100, 1, 'linear-gradient(90deg,#4DAA4F,#D9DDE2,#C84FA8)'], ['vibrance', '활기', 'Vibrance', -100, 100, 1], ['saturation', '채도', 'Saturation', -100, 100, 1]];
@@ -12,10 +12,10 @@
   const RAINBOW = 'linear-gradient(90deg,hsl(0 75% 55%),hsl(60 75% 55%),hsl(120 75% 55%),hsl(180 75% 55%),hsl(240 75% 55%),hsl(300 75% 55%),hsl(360 75% 55%))';
 
   const S = {
-    params: C.clone(A), strength: 100, view: 'after', split: 0.5, holding: false,
+    params: C.clone(A), strength: 100, rotate: 0, view: 'after', split: 0.5, holding: false,
     open: { light: true, color: true, mixer: false, grading: false, curve: false },
     mixer: 'orange', gradeTab: 'shadows', curveSel: -1, active: null,
-    save: 'saved', loggedIn: q.get('loggedIn') === '1', session: null,
+    save: 'saved', session: null,
   };
   let renderer = null, img = null, raf = 0, saveT, toastT;
 
@@ -30,7 +30,7 @@
   function markDirty() {
     setSave('dirty'); clearTimeout(saveT);
     // Draft autosave (replace with server save when accounts exist)
-    saveT = setTimeout(() => { setSave('saving'); saveT = setTimeout(() => { try { localStorage.setItem('retone.draft', JSON.stringify({ params: S.params, strength: S.strength })); } catch (e) {} setSave('saved'); }, 500); }, 1600);
+    saveT = setTimeout(() => { setSave('saving'); saveT = setTimeout(() => { try { localStorage.setItem('retone.draft', JSON.stringify({ params: S.params, strength: S.strength, rotate: S.rotate })); } catch (e) {} setSave('saved'); }, 500); }, 1600);
   }
   function setSave(s) { S.save = s; const el = $('saveChip'); el.dataset.s = s; el.textContent = { saved: '저장됨', dirty: '저장되지 않은 변경사항', saving: '저장 중…' }[s]; }
 
@@ -235,10 +235,19 @@
   /* ---------- stage ---------- */
   function fit() {
     if (!img) return;
-    const st = $('stage'), W = st.clientWidth - 56, H = st.clientHeight - 72, ar = img.naturalWidth / img.naturalHeight;
+    const st = $('stage'), W = st.clientWidth - 56, H = st.clientHeight - 72;
+    const swap = S.rotate % 180 !== 0;
+    const ar = swap ? img.naturalHeight / img.naturalWidth : img.naturalWidth / img.naturalHeight;
     let w = W, h = W / ar; if (h > H) { h = H; w = H * ar; }
-    $('photo').style.width = Math.max(120, Math.round(w)) + 'px';
-    $('photo').style.height = Math.max(90, Math.round(h)) + 'px';
+    w = Math.max(120, Math.round(w)); h = Math.max(90, Math.round(h));
+    $('photo').style.width = w + 'px';
+    $('photo').style.height = h + 'px';
+    // 캔버스는 돌기 전 기준이라 가로세로를 반대로 줘야 회전 뒤 박스에 들어맞는다
+    const cv = $('canvas');
+    cv.style.position = 'absolute'; cv.style.left = '50%'; cv.style.top = '50%';
+    cv.style.width = (swap ? h : w) + 'px';
+    cv.style.height = (swap ? w : h) + 'px';
+    cv.style.transform = `translate(-50%,-50%) rotate(${S.rotate}deg)`;
   }
   function activeLabel() {
     if (!S.active) return null;
@@ -285,11 +294,25 @@
   /* ---------- save: photo / XMP ---------- */
   $('saveBtn').addEventListener('click', () => { pops.save.hidden = !pops.save.hidden; });
   function downloadBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+  // 회전은 셰이더가 아니라 출력 단계에서 입힌다 — 미리보기는 CSS로 돌리므로 렌더러는 원래 방향 그대로 둔다
+  function outputBlob(type, cb) {
+    const src = $('canvas'), r = S.rotate;
+    if (!r) return renderer.toBlob(type, cb);
+    const swap = r % 180 !== 0, c = document.createElement('canvas');
+    c.width = swap ? src.height : src.width;
+    c.height = swap ? src.width : src.height;
+    const x = c.getContext('2d');
+    x.translate(c.width / 2, c.height / 2);
+    x.rotate(r * Math.PI / 180);
+    x.drawImage(src, -src.width / 2, -src.height / 2);
+    c.toBlob(cb, type, 0.95);
+  }
+
   function downloadPhoto(type) {
     if (!renderer) return;
     const ext = type === 'image/png' ? 'png' : 'jpg', name = `${baseName()}_retone.${ext}`;
     renderer.render(S.params, S.strength / 100, 0);
-    renderer.toBlob(type, b => {
+    outputBlob(type, b => {
       draw();
       if (!b) return toast('다운로드하지 못했어요. 다시 시도해 주세요', '다시 시도', () => downloadPhoto(type), 'error');
       downloadBlob(b, name); toast(`${name} 다운로드 완료`);
@@ -303,36 +326,14 @@
     closePops(); toast('XMP Preset 다운로드 완료 · Lightroom에서 불러올 수 있어요');
   });
 
-  /* ---------- preset (login gate) ---------- */
-  const showModal = id => { ['loginModal', 'saveModal'].forEach(m => $(m).hidden = m !== id); };
-  document.addEventListener('click', e => { if (e.target.closest('[data-close-modal]')) showModal(null); });
-  function openPreset() {
-    if (!S.loggedIn) return showModal('loginModal');
-    const n = $('presetName'); if (!n.value) n.value = `${S.session.reference.name.replace(/\.[^.]+$/, '')} 무드`;
-    $('saveStrength').textContent = S.strength; $('saveError').hidden = true; n.classList.remove('is-error');
-    $('savePresetBtn').textContent = '저장'; showModal('saveModal');
-  }
-  $('presetBtn').addEventListener('click', openPreset);
-  document.querySelectorAll('[data-login]').forEach(b => b.addEventListener('click', () => { S.loggedIn = true; $('menuLogin').textContent = '로그인됨'; openPreset(); }));
-  $('menuLogin').addEventListener('click', () => { RetoneMenu.close(); if (!S.loggedIn) showModal('loginModal'); });
-  $('presetName').addEventListener('input', () => { $('saveError').hidden = true; $('presetName').classList.remove('is-error'); });
-  $('savePresetBtn').addEventListener('click', () => {
-    const name = $('presetName').value.trim(), btn = $('savePresetBtn');
-    if (!name) return $('presetName').focus();
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>저장 중';
-    // Replace with POST /presets
-    setTimeout(() => {
-      btn.disabled = false;
-      if (SAVE_FAILS) { btn.textContent = '다시 시도'; $('saveError').hidden = false; $('presetName').classList.add('is-error'); return; }
-      showModal(null); toast(`내 Preset에 ‘${name}’을 저장했어요`, '보기', () => {});
-    }, 900);
-  });
+  $('rotateBtn').addEventListener('click', () => { S.rotate = (S.rotate + 90) % 360; fit(); markDirty(); });
 
   /* ---------- lightbox (split compare only) ---------- */
   let lb = { after: null, before: null, split: 0.5 };
   function lbFit() {
     const c = $('canvas'); if (!c.width) return;
-    const W = innerWidth - 80, H = innerHeight - 150, ar = c.width / c.height;
+    const swap = S.rotate % 180 !== 0;
+    const W = innerWidth - 80, H = innerHeight - 150, ar = swap ? c.height / c.width : c.width / c.height;
     let w = W, h = W / ar; if (h > H) { h = H; w = H * ar; }
     $('lbFrame').style.width = Math.round(w) + 'px'; $('lbFrame').style.height = Math.round(h) + 'px';
   }
@@ -340,9 +341,9 @@
   $('expandBtn').addEventListener('click', () => {
     if (!renderer) return;
     renderer.render(S.params, S.strength / 100, 0);
-    renderer.toBlob('image/jpeg', after => {
+    outputBlob('image/jpeg', after => {
       renderer.render(S.params, S.strength / 100, 1.01);
-      renderer.toBlob('image/jpeg', before => {
+      outputBlob('image/jpeg', before => {
         draw(); if (!after || !before) return;
         lb = { after: URL.createObjectURL(after), before: URL.createObjectURL(before), split: 0.5 };
         $('lbAfter').style.backgroundImage = `url("${lb.after}")`; $('lbBefore').style.backgroundImage = `url("${lb.before}")`;
@@ -371,7 +372,6 @@
   $('origName').textContent = S.session.original.name; $('refName').textContent = S.session.reference.name;
   const thumb = (el, src) => { if (src.startsWith('data:')) fetch(src).then(r => r.blob()).then(b => el.style.backgroundImage = `url("${URL.createObjectURL(b)}")`); else el.style.backgroundImage = `url("${src}")`; };
   thumb($('origThumb'), S.session.original.src); thumb($('refThumb'), S.session.reference.src);
-  if (S.loggedIn) $('menuLogin').textContent = '로그인됨';
 
   renderer = C.createRenderer($('canvas'));
   const im = new Image(); im.crossOrigin = 'anonymous';

@@ -73,7 +73,8 @@
       const p = Math.min(100, ((now - t0) / DUR) * 100);
       pct = Math.round(p);
       if (FAIL && pct >= 58) { stage = 'failed'; return paint(); }
-      if (p >= 100) { stage = 'done'; pct = 100; paint(); return setTimeout(() => { location.href = 'editor.html'; }, 1100); }
+      // replace로 넘긴다 — 분석은 거쳐 가는 화면이라, 편집에서 뒤로 가면 여기가 아니라 업로드로 돌아가야 한다
+      if (p >= 100) { stage = 'done'; pct = 100; paint(); return setTimeout(() => { location.replace('editor.html'); }, 1100); }
       paint(); raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -92,7 +93,9 @@
     if (a) palO = palette(a);
     if (b) palR = palette(b);
     fit(); new ResizeObserver(fit).observe($('stage'));
-    if (a) { const r = RetoneCore.createRenderer($('canvas')); if (r) { r.setImage(a); r.render(RetoneCore.AUTO, 1, 0); } }
+    let auto = RetoneCore.AUTO;
+    if (a && b) { auto = RetoneCore.analyze(a, b); try { sessionStorage.setItem('retone.auto', JSON.stringify(auto)); } catch (e) {} }
+    if (a) { const r = RetoneCore.createRenderer($('canvas')); if (r) { r.setImage(a); r.render(auto, 1, 0); } }
     const demo = { step1: ['running', 18], step2: ['running', 52], step3: ['running', 84], failed: ['failed', 58], done: ['done', 100] }[q.get('demo')];
     if (demo) { stage = demo[0]; pct = demo[1]; paint(); } else run();
   })();

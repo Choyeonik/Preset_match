@@ -69,13 +69,21 @@
     $('startHelp').textContent = ready ? '준비됐어요. 분석을 시작해 보세요' : '';
   }
 
-  function makePreview(f) {
+  function makePreview(f, orient) {
     return new Promise(res => {
       const url = URL.createObjectURL(f), im = new Image();
       im.onload = () => {
         const s = Math.min(1, 2000 / Math.max(im.naturalWidth, im.naturalHeight));
-        const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s);
-        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        const w = Math.round(im.naturalWidth * s), h = Math.round(im.naturalHeight * s);
+        const swap = orient >= 5; // 5~8은 가로세로가 뒤바뀐다
+        const c = document.createElement('canvas');
+        c.width = swap ? h : w; c.height = swap ? w : h;
+        const x = c.getContext('2d');
+        // 방향을 픽셀에 굳혀 둔다 — 이후 분석·편집·다운로드는 방향을 신경 쓰지 않아도 된다
+        if (orient === 3) { x.translate(c.width, c.height); x.rotate(Math.PI); }
+        else if (orient === 6) { x.translate(c.width, 0); x.rotate(Math.PI / 2); }
+        else if (orient === 8) { x.translate(0, c.height); x.rotate(-Math.PI / 2); }
+        x.drawImage(im, 0, 0, w, h);
         res(c.toDataURL('image/jpeg', 0.9)); // data URL is only used for the sessionStorage hand-off
       };
       im.onerror = () => res(null);
@@ -94,6 +102,14 @@
     if (f.size > MAX) return set(k, { ...base, status: 'error', err: 'tooBig' });
     set(k, { ...base, status: 'uploading', file: f });
     if (PREVIEW_EXT.includes(ext)) { set(k, { view: URL.createObjectURL(f) }); makePreview(f).then(src => src && (S[k].src = src)); }
+    else Promise.all([RetoneCore.embeddedJpegs(f), RetoneCore.exifOrientation(f)]).then(async ([blobs, orient]) => {
+      for (const blob of blobs) {
+        if (S[k].file !== f) return; // 꺼내는 사이에 파일을 바꿨을 수 있다
+        const src = await makePreview(blob, orient); // 디코딩에 실패하면 null이라 다음 후보로 넘어간다
+        // view(원본 조각)를 넣지 않는다 — 그러면 슬롯 썸네일도 방향이 바로잡힌 src를 쓴다
+        if (src) return set(k, { src });
+      }
+    }).catch(e => console.warn('[retone] 내장 JPEG 추출 실패', e));
     runUpload(k);
   }
 
@@ -128,8 +144,13 @@
   $('startBtn').addEventListener('click', () => {
     if (!KEYS.every(k => S[k].status === 'done')) return;
     const pack = s => ({ name: s.name, size: s.size, ext: s.ext, src: s.src });
-    try { sessionStorage.setItem('retone.session', JSON.stringify({ original: pack(S.original), reference: pack(S.reference) })); }
-    catch (e) { sessionStorage.setItem('retone.session', JSON.stringify({ original: { ...pack(S.original), src: null }, reference: { ...pack(S.reference), src: null } })); }
+    const payload = JSON.stringify({ original: pack(S.original), reference: pack(S.reference) });
+    console.log('[retone] 세션 크기', (payload.length / 1048576).toFixed(2) + 'MB', '· 미리보기', KEYS.map(k => k + ':' + (S[k].src ? 'O' : 'X')).join(' '));
+    try { sessionStorage.setItem('retone.session', payload); }
+    catch (e) {
+      console.warn('[retone] 세션 저장 실패 — 미리보기를 버리고 넘어갑니다', e);
+      sessionStorage.setItem('retone.session', JSON.stringify({ original: { ...pack(S.original), src: null }, reference: { ...pack(S.reference), src: null } }));
+    }
     location.href = 'analyzing.html';
   });
 
