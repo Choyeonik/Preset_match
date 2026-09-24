@@ -38,7 +38,8 @@
 .col-b { border-left: 1px solid var(--line); padding-top: 41.6667%; } /* one cell (6:5) of offset → checkerboard */
 .cell { aspect-ratio: 6 / 5; position: relative; }
 .cell-photo { overflow: hidden; background: #DDE1E6; }
-.cell-photo .img { width: 100%; height: 100%; background-size: cover; background-position: center; }
+.cell-photo .img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: transform .35s ease; }
+.cell-photo:hover .img { transform: scale(1.08); }
 
 @media (max-width: 859px) {
   .landing { flex-wrap: wrap; }
