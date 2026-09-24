@@ -24,11 +24,13 @@
     const copy = $('copy'), foot = $('foot'), dial = $('dial');
     aside.classList.toggle('compact', !roomy);
     aside.style.setProperty('--copy-indent', roomy ? Math.min(230, aw - 330) + 'px' : '0px');
-    let top, scale = 1;
+    // 타이틀과 같은 비율로 줄어들도록, 렌더된 타이틀 폰트 크기를 최대치(92px) 대비 비율로 쓴다
+    const titleScale = parseFloat(getComputedStyle($('copy').querySelector('.display')).fontSize) / 92;
+    let top, scale = titleScale;
     if (roomy) top = Math.round(ah * 0.55);
     else {
       const cb = copy.offsetTop + copy.offsetHeight, fb = foot.offsetTop, gap = fb - cb;
-      scale = Math.max(0.45, Math.min(1, (gap - 24) / 190));
+      scale = Math.min(titleScale, Math.max(0.45, (gap - 24) / 190));
       top = Math.round((cb + fb) / 2);
     }
     dial.style.top = top + 'px';
