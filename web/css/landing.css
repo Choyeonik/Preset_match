@@ -19,7 +19,7 @@
 
 .l-copy { position: relative; z-index: 2; margin-top: 10vh; margin-left: var(--copy-indent, 230px); max-width: 320px; }
 .l-copy { --fs-display: clamp(36px, 4.6vw, 64px); }
-.l-copy .display { margin-left: -40px; white-space: nowrap; }
+.l-copy .display { margin-left: -20px; white-space: nowrap; }
 .l-copy .lead p { font-size: calc(var(--fs-display) * .49); }
 /* .btn은 inline-flex라 margin auto가 먹지 않는다 — flex로 바꾸고 폭을 내용에 맞춰야 가운데로 온다 */
 .l-copy .cta { display: flex; width: fit-content; margin: 36px auto 0; font-family: "Playfair Display", serif; }
