@@ -47,7 +47,7 @@
     <div class="e-work">
       <div class="stage" id="stage">
         <div class="photo" id="photo">
-          <canvas id="canvas"></canvas>
+          <div class="photo-clip"><canvas id="canvas"></canvas></div>
           <div class="photo-hit" id="photoHit"></div>
           <div id="splitUi" hidden>
             <div class="split-line" id="splitLine"><div class="split-knob">‹›</div></div>
@@ -56,6 +56,11 @@
           </div>
           <button class="expand" id="expandBtn" aria-label="크게 보기" title="크게 보기"></button>
           <span class="tag tag-md photo-chip" id="chip">자동 보정 결과</span>
+          <div id="cropUi" hidden>
+            <div id="cropBox">
+              <i class="crop-h" data-h="tl"></i><i class="crop-h" data-h="tr"></i><i class="crop-h" data-h="bl"></i><i class="crop-h" data-h="br"></i>
+            </div>
+          </div>
         </div>
         <span class="hold-hint" id="holdHint">사진을 누르고 있으면 원본이 보여요</span>
         <div class="toast" id="toast" hidden><span class="toast-dot" id="toastDot">✓</span><span id="toastText"></span><button id="toastAction" hidden></button></div>
@@ -75,6 +80,9 @@
         </div>
         <div class="tool-right">
           <button class="btn btn-quiet" id="rotateBtn" title="90° 회전">⟳ 회전</button>
+          <button class="btn btn-quiet" id="cropBtn" title="크롭">⤢ 크롭</button>
+          <button class="btn btn-quiet" id="cropCancel" hidden>취소</button>
+          <button class="btn btn-primary" id="cropApply" hidden>크롭 적용</button>
           <button class="btn btn-quiet" id="resetBtn" disabled>↺ 되돌리기</button>
           <div id="resetPop" hidden>
             <div class="pop-scrim" data-close-pop></div>

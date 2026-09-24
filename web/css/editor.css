@@ -35,9 +35,19 @@ button.save-row:hover { background: var(--bg); }
 .e-work { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .stage { flex: 1; min-height: 0; position: relative; background: var(--stage); display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .photo { position: relative; box-shadow: var(--sh-photo); background: var(--photo-bg); }
+/* 캔버스만 자르는 래퍼 — 크롭 핸들처럼 이미지 가장자리에 붙는 UI까지 함께 잘리지 않게 분리한다 */
+.photo-clip { position: absolute; inset: 0; overflow: hidden; }
 .photo canvas { width: 100%; height: 100%; display: block; }
 .photo-hit { position: absolute; inset: 0; cursor: pointer; touch-action: none; }
 .photo.is-split .photo-hit { cursor: ew-resize; }
+.photo.is-cropping .photo-hit { pointer-events: none; }
+
+/* crop */
+#cropUi { position: absolute; inset: 0; z-index: 6; touch-action: none; }
+#cropBox { position: absolute; border: 1.5px solid #fff; box-shadow: 0 0 0 2000px rgba(17, 20, 24, .55); cursor: move; }
+.crop-h { position: absolute; width: 16px; height: 16px; margin: -8px; background: #fff; border-radius: 3px; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); }
+.crop-h[data-h="tl"], .crop-h[data-h="br"] { cursor: nwse-resize; }
+.crop-h[data-h="tr"], .crop-h[data-h="bl"] { cursor: nesw-resize; }
 .split-line { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
 .split-knob { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--ink); }
 .photo .tag-before { left: 12px; bottom: 12px; }

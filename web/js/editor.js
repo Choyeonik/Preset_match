@@ -5,14 +5,14 @@
   const $ = id => document.getElementById(id);
   const q = new URLSearchParams(location.search);
 
-  const LIGHT = [['exposure', '노출', 'Exposure', -5, 5, 0.05], ['contrast', '대비', 'Contrast', -100, 100, 1], ['highlights', '밝은 영역', 'Highlights', -100, 100, 1], ['shadows', '어두운 영역', 'Shadows', -100, 100, 1], ['whites', '흰색 계열', 'Whites', -100, 100, 1], ['blacks', '검은색 계열', 'Blacks', -100, 100, 1]];
+  const LIGHT = [['exposure', '노출', 'Exposure', -5, 5, 0.05], ['contrast', '대비', 'Contrast', -100, 100, 1], ['highlights', '밝은 영역', 'Highlights', -100, 100, 1], ['shadows', '어두운 영역', 'Shadows', -100, 100, 1], ['whites', '흰색 계열', 'Whites', -100, 100, 1], ['blacks', '검은색 계열', 'Blacks', -100, 100, 1], ['texture', '텍스처', 'Texture', -100, 100, 1], ['clarity', '부분 대비', 'Clarity', -100, 100, 1], ['dehaze', '디헤이즈', 'Dehaze', -100, 100, 1]];
   const COLOR = [['temperature', '색온도', 'Temperature', -100, 100, 1, 'linear-gradient(90deg,#4A7FD6,#D9DDE2,#E8B93A)'], ['tint', '색조', 'Tint', -100, 100, 1, 'linear-gradient(90deg,#4DAA4F,#D9DDE2,#C84FA8)'], ['vibrance', '활기', 'Vibrance', -100, 100, 1], ['saturation', '채도', 'Saturation', -100, 100, 1]];
   const MIX = [['red', '빨강', 'Red', '#E0443A'], ['orange', '주황', 'Orange', '#EE8A2E'], ['yellow', '노랑', 'Yellow', '#E6C43A'], ['green', '초록', 'Green', '#4DAA4F'], ['aqua', '청록', 'Aqua', '#3BB6B8'], ['blue', '파랑', 'Blue', '#3C6FD9'], ['purple', '보라', 'Purple', '#8A55D0'], ['magenta', '자홍', 'Magenta', '#D04AA5']];
   const GRADE = [['shadows', '어두운 영역'], ['midtones', '중간 영역'], ['highlights', '밝은 영역']];
   const RAINBOW = 'linear-gradient(90deg,hsl(0 75% 55%),hsl(60 75% 55%),hsl(120 75% 55%),hsl(180 75% 55%),hsl(240 75% 55%),hsl(300 75% 55%),hsl(360 75% 55%))';
 
   const S = {
-    params: C.clone(A), strength: 100, rotate: 0, view: 'after', split: 0.5, holding: false,
+    params: C.clone(A), strength: 100, rotate: 0, crop: { x0: 0, y0: 0, x1: 1, y1: 1 }, cropping: false, view: 'after', split: 0.5, holding: false,
     open: { light: true, color: true, mixer: false, grading: false, curve: false },
     mixer: 'orange', gradeTab: 'shadows', curveSel: -1, active: null,
     save: 'saved', session: null,
@@ -30,7 +30,7 @@
   function markDirty() {
     setSave('dirty'); clearTimeout(saveT);
     // Draft autosave (replace with server save when accounts exist)
-    saveT = setTimeout(() => { setSave('saving'); saveT = setTimeout(() => { try { localStorage.setItem('retone.draft', JSON.stringify({ params: S.params, strength: S.strength, rotate: S.rotate })); } catch (e) {} setSave('saved'); }, 500); }, 1600);
+    saveT = setTimeout(() => { setSave('saving'); saveT = setTimeout(() => { try { localStorage.setItem('retone.draft', JSON.stringify({ params: S.params, strength: S.strength, rotate: S.rotate, crop: S.crop })); } catch (e) {} setSave('saved'); }, 500); }, 1600);
   }
   function setSave(s) { S.save = s; const el = $('saveChip'); el.dataset.s = s; el.textContent = { saved: '저장됨', dirty: '저장되지 않은 변경사항', saving: '저장 중…' }[s]; }
 
@@ -233,21 +233,33 @@
   }
 
   /* ---------- stage ---------- */
-  function fit() {
+  const FULL_CROP = { x0: 0, y0: 0, x1: 1, y1: 1 };
+  function fit(overrideCrop) {
     if (!img) return;
     const st = $('stage'), W = st.clientWidth - 56, H = st.clientHeight - 72;
     const swap = S.rotate % 180 !== 0;
-    const ar = swap ? img.naturalHeight / img.naturalWidth : img.naturalWidth / img.naturalHeight;
+    // rw/rh = 회전을 적용한 뒤의 이미지 크기. 크롭 좌표(0~1)는 이 회전된 공간을 기준으로 한다.
+    const rw = swap ? img.naturalHeight : img.naturalWidth, rh = swap ? img.naturalWidth : img.naturalHeight;
+    const cr = overrideCrop || S.crop, fw = cr.x1 - cr.x0, fh = cr.y1 - cr.y0;
+    const ar = (rw * fw) / (rh * fh);
     let w = W, h = W / ar; if (h > H) { h = H; w = H * ar; }
     w = Math.max(120, Math.round(w)); h = Math.max(90, Math.round(h));
     $('photo').style.width = w + 'px';
     $('photo').style.height = h + 'px';
-    // 캔버스는 돌기 전 기준이라 가로세로를 반대로 줘야 회전 뒤 박스에 들어맞는다
+    // 캔버스는 "회전 전" 기준 크기다. 회전된 전체 이미지가 이만큼 커야 크롭 창(w,h)에 정확히 맞는다.
+    const s = w / (rw * fw), fullRW = rw * s, fullRH = rh * s;
+    const canvasCssW = swap ? fullRH : fullRW, canvasCssH = swap ? fullRW : fullRH;
+    // 회전은 캔버스 중심을 축으로 돈다. 회전된 전체 이미지의 중심이 어디로 와야 크롭 창의
+    // (x0,y0)~(x1,y1) 구간이 (0,0)~(w,h)에 오는지를 먼저 구하고, 그 중심에서 캔버스 절반 크기만큼 되짚는다.
+    const cx = (0.5 - cr.x0) * fullRW, cy = (0.5 - cr.y0) * fullRH;
     const cv = $('canvas');
-    cv.style.position = 'absolute'; cv.style.left = '50%'; cv.style.top = '50%';
-    cv.style.width = (swap ? h : w) + 'px';
-    cv.style.height = (swap ? w : h) + 'px';
-    cv.style.transform = `translate(-50%,-50%) rotate(${S.rotate}deg)`;
+    cv.style.position = 'absolute';
+    cv.style.width = canvasCssW + 'px';
+    cv.style.height = canvasCssH + 'px';
+    cv.style.left = (cx - canvasCssW / 2) + 'px';
+    cv.style.top = (cy - canvasCssH / 2) + 'px';
+    cv.style.transform = `rotate(${S.rotate}deg)`;
+    if (S.cropping) positionCropBox();
   }
   function activeLabel() {
     if (!S.active) return null;
@@ -294,17 +306,22 @@
   /* ---------- save: photo / XMP ---------- */
   $('saveBtn').addEventListener('click', () => { pops.save.hidden = !pops.save.hidden; });
   function downloadBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
-  // 회전은 셰이더가 아니라 출력 단계에서 입힌다 — 미리보기는 CSS로 돌리므로 렌더러는 원래 방향 그대로 둔다
+  // 회전·크롭은 셰이더가 아니라 출력 단계에서 입힌다 — 미리보기는 CSS로 돌리고 창을 좁히므로
+  // 렌더러 자체는 원본 방향·전체 프레임 그대로 둔다.
   function outputBlob(type, cb) {
-    const src = $('canvas'), r = S.rotate;
-    if (!r) return renderer.toBlob(type, cb);
-    const swap = r % 180 !== 0, c = document.createElement('canvas');
-    c.width = swap ? src.height : src.width;
-    c.height = swap ? src.width : src.height;
-    const x = c.getContext('2d');
-    x.translate(c.width / 2, c.height / 2);
-    x.rotate(r * Math.PI / 180);
-    x.drawImage(src, -src.width / 2, -src.height / 2);
+    const src = $('canvas'), r = S.rotate, cr = S.crop;
+    const cropped = cr.x0 > 1e-3 || cr.y0 > 1e-3 || cr.x1 < 1 - 1e-3 || cr.y1 < 1 - 1e-3;
+    if (!r && !cropped) return renderer.toBlob(type, cb);
+    const swap = r % 180 !== 0, rw = swap ? src.height : src.width, rh = swap ? src.width : src.height;
+    const rc = document.createElement('canvas'); rc.width = rw; rc.height = rh;
+    const rx = rc.getContext('2d');
+    rx.translate(rc.width / 2, rc.height / 2); rx.rotate(r * Math.PI / 180);
+    rx.drawImage(src, -src.width / 2, -src.height / 2);
+    if (!cropped) return rc.toBlob(cb, type, 0.95);
+    const cx0 = Math.round(cr.x0 * rw), cy0 = Math.round(cr.y0 * rh);
+    const cw = Math.round(cr.x1 * rw) - cx0, ch = Math.round(cr.y1 * rh) - cy0;
+    const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+    c.getContext('2d').drawImage(rc, cx0, cy0, cw, ch, 0, 0, cw, ch);
     c.toBlob(cb, type, 0.95);
   }
 
@@ -328,12 +345,67 @@
 
   $('rotateBtn').addEventListener('click', () => { S.rotate = (S.rotate + 90) % 360; fit(); markDirty(); });
 
+  /* ---------- crop ---------- */
+  let cropDraft = null, cropDrag = null;
+  function positionCropBox() {
+    const ph = $('photo'), w = ph.clientWidth, h = ph.clientHeight, b = $('cropBox');
+    const x0 = cropDraft.x0 * w, y0 = cropDraft.y0 * h, x1 = cropDraft.x1 * w, y1 = cropDraft.y1 * h;
+    b.style.left = x0 + 'px'; b.style.top = y0 + 'px'; b.style.width = (x1 - x0) + 'px'; b.style.height = (y1 - y0) + 'px';
+    ['tl', 'tr', 'bl', 'br'].forEach(k => {
+      const el = document.querySelector(`.crop-h[data-h="${k}"]`);
+      el.style.left = (k.includes('r') ? x1 - x0 : 0) + 'px';
+      el.style.top = (k.includes('b') ? y1 - y0 : 0) + 'px';
+    });
+  }
+  function enterCrop() {
+    S.cropping = true; cropDraft = { ...S.crop };
+    $('photo').classList.add('is-cropping'); $('cropUi').hidden = false;
+    $('cropBtn').hidden = true; $('cropCancel').hidden = false; $('cropApply').hidden = false;
+    fit(FULL_CROP); positionCropBox();
+  }
+  function exitCrop(apply) {
+    if (apply) { S.crop = { ...cropDraft }; markDirty(); }
+    S.cropping = false;
+    $('photo').classList.remove('is-cropping'); $('cropUi').hidden = true;
+    $('cropBtn').hidden = false; $('cropCancel').hidden = true; $('cropApply').hidden = true;
+    fit(); draw(); syncStage();
+  }
+  $('cropBtn').addEventListener('click', enterCrop);
+  $('cropCancel').addEventListener('click', () => exitCrop(false));
+  $('cropApply').addEventListener('click', () => exitCrop(true));
+  $('cropUi').addEventListener('pointerdown', e => {
+    const ph = $('photo'), handle = e.target.closest('.crop-h');
+    cropDrag = { handle: handle ? handle.dataset.h : 'move', startX: e.clientX, startY: e.clientY, start: { ...cropDraft }, w: ph.clientWidth, h: ph.clientHeight };
+    e.preventDefault();
+  });
+  addEventListener('pointermove', e => {
+    if (!cropDrag) return;
+    const { handle, startX, startY, start, w, h } = cropDrag, MIN = 0.08;
+    const dx = (e.clientX - startX) / w, dy = (e.clientY - startY) / h;
+    let { x0, y0, x1, y1 } = start;
+    if (handle === 'move') {
+      let nx0 = start.x0 + dx, nx1 = start.x1 + dx, ny0 = start.y0 + dy, ny1 = start.y1 + dy;
+      if (nx0 < 0) { nx1 -= nx0; nx0 = 0; } if (nx1 > 1) { nx0 -= (nx1 - 1); nx1 = 1; }
+      if (ny0 < 0) { ny1 -= ny0; ny0 = 0; } if (ny1 > 1) { ny0 -= (ny1 - 1); ny1 = 1; }
+      x0 = nx0; x1 = nx1; y0 = ny0; y1 = ny1;
+    } else {
+      if (handle.includes('l')) x0 = Math.min(start.x1 - MIN, Math.max(0, start.x0 + dx));
+      if (handle.includes('r')) x1 = Math.max(start.x0 + MIN, Math.min(1, start.x1 + dx));
+      if (handle.includes('t')) y0 = Math.min(start.y1 - MIN, Math.max(0, start.y0 + dy));
+      if (handle.includes('b')) y1 = Math.max(start.y0 + MIN, Math.min(1, start.y1 + dy));
+    }
+    cropDraft = { x0, y0, x1, y1 }; positionCropBox();
+  });
+  addEventListener('pointerup', () => { cropDrag = null; });
+
   /* ---------- lightbox (split compare only) ---------- */
   let lb = { after: null, before: null, split: 0.5 };
   function lbFit() {
     const c = $('canvas'); if (!c.width) return;
     const swap = S.rotate % 180 !== 0;
-    const W = innerWidth - 80, H = innerHeight - 150, ar = swap ? c.height / c.width : c.width / c.height;
+    const rw = swap ? c.height : c.width, rh = swap ? c.width : c.height;
+    const cr = S.crop, ar = (rw * (cr.x1 - cr.x0)) / (rh * (cr.y1 - cr.y0));
+    const W = innerWidth - 80, H = innerHeight - 150;
     let w = W, h = W / ar; if (h > H) { h = H; w = H * ar; }
     $('lbFrame').style.width = Math.round(w) + 'px'; $('lbFrame').style.height = Math.round(h) + 'px';
   }
@@ -378,6 +450,6 @@
   im.onload = () => { img = im; renderer && renderer.setImage(im); fit(); draw(); };
   im.src = S.session.original.src;
   if (!o.src) setTimeout(() => toast(`${(o.ext || '').toUpperCase()} 미리보기를 지원하지 않아 샘플 사진으로 보여드려요`, null, null, 'info'), 600);
-  new ResizeObserver(fit).observe($('stage'));
+  new ResizeObserver(() => fit(S.cropping ? FULL_CROP : undefined)).observe($('stage'));
   renderPanel(); syncStage();
 })();

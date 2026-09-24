@@ -4,6 +4,7 @@
   const AUTO = {
     exposure: 0.35, contrast: 12, highlights: -24, shadows: 18, whites: 6, blacks: -10,
     temperature: 14, tint: 4, vibrance: 16, saturation: -6,
+    texture: 15, clarity: -20, dehaze: -5, // 실제 라이트룸 프리셋 10개의 중앙값 — 색감 분석 대상이 아니라 데모 기본값
     hsl: { red: [0, 0, 0], orange: [4, -8, 6], yellow: [-6, -10, 0], green: [10, -20, -4], aqua: [0, -10, 0], blue: [-12, -18, -6], purple: [0, 0, 0], magenta: [0, 0, 0] },
     grading: { shadows: [210, 12], midtones: [30, 6], highlights: [40, 14], balance: 0 },
     curve: [[0, 0.04], [0.25, 0.22], [0.5, 0.5], [0.75, 0.79], [1, 0.97]],
@@ -17,7 +18,9 @@
     const hsl = {}; HSL_KEYS.forEach(k => hsl[k] = [0, 0, 0]);
     return {
       exposure: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0,
-      temperature: 0, tint: 0, vibrance: 0, saturation: 0, hsl,
+      temperature: 0, tint: 0, vibrance: 0, saturation: 0,
+      texture: 0, clarity: 0, dehaze: 0, // 64x64 표본으로는 국소 대비·안개 정도를 가늠할 수 없어 분석 대상에서 뺀다
+      hsl,
       grading: { shadows: [0, 0], midtones: [0, 0], highlights: [0, 0], balance: 0 },
       curve: [[0, 0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1, 1]],
     };
@@ -251,10 +254,13 @@
     };
   }
 
+  // ponytail: 텍스처·부분 대비(clarity)는 진짜 언샤프 마스크(블러 후 차분) 대신 2·8텍셀 반경의
+  // 4탭 평균으로 근사한다. 디헤이즈도 다크 채널 프라이어가 아니라 대비+채도+암부 근사다.
+  // 결과가 부족하면: 블러를 밉맵 기반 다운샘플로 바꾸거나(정사각 텍스처 전제 필요), 실제 헤이즈 추정으로.
   const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
   const FS = `precision highp float;varying vec2 v;
-uniform sampler2D img,lut;uniform float ex,co,hi,sh,wh,bl,te,ti,vi,sa,st,sp,bal;
-uniform vec3 hsl[8];uniform float hc[8];uniform vec2 gS,gM,gH;
+uniform sampler2D img,lut;uniform float ex,co,hi,sh,wh,bl,te,ti,vi,sa,st,sp,bal,tx,cl,hz;
+uniform vec3 hsl[8];uniform float hc[8];uniform vec2 gS,gM,gH,texel;
 vec3 rgb2hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));float d=q.x-min(q.w,q.y);float e=1e-10;return vec3(abs(q.z+(q.w-q.y)/(6.*d+e)),d/(q.x+e),q.x);}
 vec3 hsv2rgb(vec3 c){vec4 K=vec4(1.,2./3.,1./3.,3.);vec3 p=abs(fract(c.xxx+K.xyz)*6.-K.www);return c.z*mix(K.xxx,clamp(p-K.xxx,0.,1.),c.y);}
 float lum(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
@@ -266,10 +272,16 @@ c+=sh*.28*(1.-smoothstep(0.,.55,L))*(1.-L);c+=hi*.28*smoothstep(.45,1.,L);
 c=(c-.5)*(1.+co*.8)+.5;
 c.r+=te*.08;c.b-=te*.08;c.g-=ti*.07;c.r+=ti*.03;c.b+=ti*.03;
 c=clamp(c,0.,1.);
+if(hz!=0.){c=(c-.5)*(1.+hz*.35)+.5;c-=hz*.06*(1.-smoothstep(0.,.5,lum(c)));c=clamp(c,0.,1.);}
+if(tx!=0.||cl!=0.){
+vec3 b1=(texture2D(img,v+vec2(texel.x,0.)).rgb+texture2D(img,v-vec2(texel.x,0.)).rgb+texture2D(img,v+vec2(0.,texel.y)).rgb+texture2D(img,v-vec2(0.,texel.y)).rgb)*.25;
+vec3 b2=(texture2D(img,v+texel*4.).rgb+texture2D(img,v-texel*4.).rgb+texture2D(img,v+vec2(texel.x,-texel.y)*4.).rgb+texture2D(img,v+vec2(-texel.x,texel.y)*4.).rgb)*.25;
+c+=(o-b1)*tx*.9+(o-b2)*cl*.7;c=clamp(c,0.,1.);
+}
 vec3 h=rgb2hsv(c);float hd=h.x*360.;float dh=0.,ds=0.,dl=0.;
 for(int i=0;i<8;i++){float d=abs(mod(hd-hc[i]+180.,360.)-180.);float w=max(0.,1.-d/42.);dh+=w*hsl[i].x;ds+=w*hsl[i].y;dl+=w*hsl[i].z;}
 h.x=fract(h.x+dh*30./360.+1.);h.y=clamp(h.y*(1.+ds),0.,1.);h.z=clamp(h.z*(1.+dl*.5*h.y),0.,1.);
-h.y=clamp(h.y*(1.+vi*(1.-h.y)),0.,1.);h.y=clamp(h.y*(1.+sa),0.,1.);
+h.y=clamp(h.y*(1.+vi*(1.-h.y)),0.,1.);h.y=clamp(h.y*(1.+sa+hz*.3),0.,1.);
 c=hsv2rgb(h);L=lum(c);float pv=.5+bal*.3;
 float ws=1.-smoothstep(0.,pv,L);float wH=smoothstep(pv,1.,L);float wm=clamp(1.-ws-wH,0.,1.);
 c+=tintOf(gS.x)*gS.y*ws*.4+tintOf(gM.x)*gM.y*wm*.3+tintOf(gH.x)*gH.y*wH*.4;
@@ -299,6 +311,7 @@ c=mix(o,c,st);if(v.x<sp)c=o;gl_FragColor=vec4(c,1.);}`;
         const max = 2400, s = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
         canvas.width = Math.round(im.naturalWidth * s); canvas.height = Math.round(im.naturalHeight * s);
         gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.uniform2f(U('texel'), 1 / canvas.width, 1 / canvas.height);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, imgTex);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
@@ -318,6 +331,7 @@ c=mix(o,c,st);if(v.x<sp)c=o;gl_FragColor=vec4(c,1.);}`;
         f('ex', P.exposure); f('co', P.contrast / 100); f('hi', P.highlights / 100); f('sh', P.shadows / 100);
         f('wh', P.whites / 100); f('bl', P.blacks / 100); f('te', P.temperature / 100); f('ti', P.tint / 100);
         f('vi', P.vibrance / 100); f('sa', P.saturation / 100); f('st', strength); f('sp', split); f('bal', P.grading.balance / 100);
+        f('tx', (P.texture || 0) / 100); f('cl', (P.clarity || 0) / 100); f('hz', (P.dehaze || 0) / 100);
         const arr = []; HSL_KEYS.forEach(k => arr.push(P.hsl[k][0] / 100, P.hsl[k][1] / 100, P.hsl[k][2] / 100));
         gl.uniform3fv(U('hsl'), new Float32Array(arr));
         const g = P.grading;
@@ -332,7 +346,7 @@ c=mix(o,c,st);if(v.x<sp)c=o;gl_FragColor=vec4(c,1.);}`;
 
   function scaled(P, s) {
     const q = clone(P), m = v => Math.round(v * s * 100) / 100;
-    ['exposure', 'contrast', 'highlights', 'shadows', 'whites', 'blacks', 'temperature', 'tint', 'vibrance', 'saturation'].forEach(k => q[k] = m(P[k]));
+    ['exposure', 'contrast', 'highlights', 'shadows', 'whites', 'blacks', 'temperature', 'tint', 'vibrance', 'saturation', 'texture', 'clarity', 'dehaze'].forEach(k => q[k] = m(P[k]));
     HSL_KEYS.forEach(k => q.hsl[k] = P.hsl[k].map(m));
     ['shadows', 'midtones', 'highlights'].forEach(k => q.grading[k] = [P.grading[k][0], m(P.grading[k][1])]);
     q.grading.balance = m(P.grading.balance);
@@ -348,6 +362,7 @@ c=mix(o,c,st);if(v.x<sp)c=o;gl_FragColor=vec4(c,1.);}`;
       'crs:Exposure2012': (q.exposure >= 0 ? '+' : '') + q.exposure.toFixed(2), 'crs:Contrast2012': r(q.contrast),
       'crs:Highlights2012': r(q.highlights), 'crs:Shadows2012': r(q.shadows), 'crs:Whites2012': r(q.whites), 'crs:Blacks2012': r(q.blacks),
       'crs:IncrementalTemperature': r(q.temperature), 'crs:IncrementalTint': r(q.tint), 'crs:Vibrance': r(q.vibrance), 'crs:Saturation': r(q.saturation),
+      'crs:Texture': r(q.texture), 'crs:Clarity2012': r(q.clarity), 'crs:Dehaze': r(q.dehaze),
       'crs:ColorGradeShadowHue': r(q.grading.shadows[0]), 'crs:ColorGradeShadowSat': r(q.grading.shadows[1]),
       'crs:ColorGradeMidtoneHue': r(q.grading.midtones[0]), 'crs:ColorGradeMidtoneSat': r(q.grading.midtones[1]),
       'crs:ColorGradeHighlightHue': r(q.grading.highlights[0]), 'crs:ColorGradeHighlightSat': r(q.grading.highlights[1]),
