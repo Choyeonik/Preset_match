@@ -73,7 +73,7 @@ button { cursor: pointer; }
 
 /* ---------- headline block (Tone. / Upload. / 48%) ---------- */
 /* 손글씨체라 굵기가 400까지뿐이고, 산세리프 기준의 음수 자간을 쓰면 획이 서로 겹친다 */
-.display { margin: 0; font-family: "Playwrite CU", cursive; font-size: calc(var(--fs-display) + 10px); font-weight: 400; letter-spacing: normal; line-height: 1.15; text-align: center; }
+.display { margin: 0; font-family: "Playwrite CU", cursive; font-size: var(--fs-display); font-weight: 400; letter-spacing: normal; line-height: 1.15; text-align: center; }
 /* 글자꼴 자체가 기울어 있어 font-style로는 못 펴므로, 괄호만 직립 폰트로 찍는다 */
 .display span { font-family: var(--font); }
 .lead { margin-top: 28px; }
